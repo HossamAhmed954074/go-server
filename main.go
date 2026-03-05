@@ -27,16 +27,27 @@ func main() {
 
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/", fs)
-	r := chi.NewRouter()
-	r.Use(cors.Handler(cors.Options{
+
+	// Set up the router and CORS middleware
+	router := chi.NewRouter()
+	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
 	}))
-	r.HandleFunc("/hello", hellowHandeler)
-	err := http.ListenAndServe(":"+port, r)
-	if err != nil {
+
+	r1 := chi.NewRouter()
+	r1.HandleFunc("/hello", hellowHandeler)
+	router.Mount("/api", r1)
+
+	// Start the server
+	err := &http.Server{
+		Addr:    ":" + port,
+		Handler: router,
+	}
+	log.Printf("Server is running on http://localhost:%s\n", port)
+	if err := err.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 
